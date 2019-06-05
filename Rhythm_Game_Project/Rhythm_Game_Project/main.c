@@ -48,8 +48,8 @@ enum RGHT{RGHT_INIT, RGHT_WAIT};
 enum UPP{UP_INIT, UP_WAIT};
 enum DOWNN{DOWN_INIT, DOWN_WAIT};
 enum LCD_Menu {LCD_Menu_Init, LCD_Menu_Start, LCD_WAIT1, LCD_Menu_Songs, LCD_WAIT2, LCD_Menu_Zense, LCD_WAIT3, Play_CountDown, Play_Song, Score_Screen, LCD_WAIT4};
-enum RGB_Matrix{RGB_INIT, RGB_MENU, RGB_SONG};
-enum Note_Play{Note_INIT, Note_Wait, Note_Play_Song};
+enum RGB_Matrix{RGB_INIT, RGB_MENU, RGB_SONG, RGB_RESET};
+enum Note_Play{Note_INIT, Note_Wait, Note_Play_Song, Note_Reset};
 enum Player{Player_Init, Player_Press};
     
 //Tick Functions
@@ -106,11 +106,21 @@ int main(void)
     Shift_transmit_data(255);
         
     //song creation
+    /*
     for(unsigned char j = 0; j < 73; j++) {
         songs[0].notes[j] = notesDIV[j];
         songs[0].timing[j] = timesDIV[j];
         songs[0].rest_timing[j] = restsDIV[j];
         songs[0].hit[j] = pressDIV[j];
+        songs[0].high_score = eeprom_read_byte((uint8_t*) 1);
+    }
+    */
+    
+    for(unsigned char j = 0; j < 7; j++) {
+        songs[0].notes[j] = notes_zense[j];
+        songs[0].timing[j] = timing_zense[j];
+        songs[0].rest_timing[j] = rests_zense[j];
+        songs[0].hit[j] = hit_zense[j];
         songs[0].high_score = eeprom_read_byte((uint8_t*) 1);
     }
     
@@ -373,7 +383,6 @@ int LCD_Menu_Tick(int state){
             }
             else if(!LEFT && RIGHT && !UP && !DOWN){
                 LCD_ClearScreen();
-                LCD_DisplayString(1, "Score:");
                 state = LCD_WAIT3;
                 break;
             }
@@ -401,7 +410,7 @@ int LCD_Menu_Tick(int state){
                 break;
             }
         case Play_Song:
-            if(!song_finished || playing){
+            if((song_finished == false) || (playing == true)){
                 state = Play_Song;
                 break;
             }
@@ -470,19 +479,24 @@ int LCD_Menu_Tick(int state){
         case LCD_WAIT3:
             break;
         case Play_CountDown:
+            LCD_DisplayString(1, "Score:");
+            LCD_Cursor(9);
+            LCD_WriteData(current_score + '0');
+            LCD_WriteData(current_score + '0');
+            LCD_WriteData(current_score + '0');
             break;
         case Play_Song:
             if(score_increase == true){
                 LCD_Cursor(9);
-                LCD_WriteData(((current_score / 100) % 10) + '0');
+                LCD_WriteData(((current_score / 100) % 10) + '0'); //hundreds
                 LCD_WriteData(((current_score / 10) % 10) + '0'); //tens place
-                LCD_WriteData((current_score % 10) + '0');
+                LCD_WriteData((current_score % 10) + '0'); //ones
                 break;
             }
             else{
                 break;
             }
-        case Score_Screen: //need to add in high score functionality
+        case Score_Screen: 
             if(songs[current_song_choice].high_score < current_score){
                 LCD_ClearScreen();
                 LCD_DisplayString(1, "HIGH SCORE:");
@@ -524,14 +538,17 @@ int RGB_Matrix_Tick(int state){
                 break;
             }    
         case RGB_SONG:
-            if(song_finished){
-                state = RGB_MENU;
+            if(song_finished || !playing){
+                state = RGB_RESET;
                 break;
             }        
             else{
                 state = RGB_SONG;
                 break;
             }
+        case RGB_RESET:
+            state = RGB_MENU;
+            break;
     }
     switch(state){
         case RGB_INIT:
@@ -590,6 +607,11 @@ int RGB_Matrix_Tick(int state){
             
             }
             break;
+        case RGB_RESET:
+            for(unsigned char r = 0; r < 8; r++){
+                RGB_DISPLAY_NOTES[r] = 0;
+            }
+            break;
     }
     
     return state;
@@ -616,14 +638,16 @@ int Note_Tick(int state){
             }
         case Note_Play_Song:
             if(song_finished){
-                PWM_off();
-                state = Note_Wait;
+                state = Note_Reset;
                 break;
             }
             else{
                 state = Note_Play_Song;
                 break;
             }
+        case Note_Reset:
+            state = Note_Wait;
+            break;
     }
     switch(state){
         case Note_INIT:
@@ -631,6 +655,7 @@ int Note_Tick(int state){
         case Note_Wait:
             play_note = 0;
             rest_note = 0;
+            current_score = 0;
             break;
         case Note_Play_Song:
             if(play_note < songs[current_song_choice].timing[current_note]){
@@ -665,6 +690,11 @@ int Note_Tick(int state){
                     }
                 }
             }
+            break;
+        case Note_Reset:
+            PWM_off();
+            current_note = 0;
+            score_increase = false;
             break;
     }
     return state;
