@@ -572,21 +572,21 @@ int RGB_Matrix_Tick(int state){
             if(play_note < songs[current_song_choice].timing[current_note]){
                 note_to_hit = songs[current_song_choice].hit[current_note];
                 
-                if(note_to_hit == 1){
-                    RGB_DISPLAY_NOTES[0] |= 1;
-                    RGB_DISPLAY_NOTES[1] |= 1;
-                }
-                else if(note_to_hit == 2){
-                    RGB_DISPLAY_NOTES[2] |= 1;
-                    RGB_DISPLAY_NOTES[3] |= 1;
+                if(note_to_hit == 8){
+                    RGB_DISPLAY_NOTES[7] |= 1;
+                    RGB_DISPLAY_NOTES[6] |= 1;
                 }
                 else if(note_to_hit == 4){
-                    RGB_DISPLAY_NOTES[4] |= 1;
                     RGB_DISPLAY_NOTES[5] |= 1;
+                    RGB_DISPLAY_NOTES[4] |= 1;
+                }
+                else if(note_to_hit == 2){
+                    RGB_DISPLAY_NOTES[3] |= 1;
+                    RGB_DISPLAY_NOTES[2] |= 1;
                 }    
-                else if(note_to_hit == 8){
-                    RGB_DISPLAY_NOTES[6] |= 1;
-                    RGB_DISPLAY_NOTES[7] |= 1;
+                else if(note_to_hit == 1){
+                    RGB_DISPLAY_NOTES[1] |= 1;
+                    RGB_DISPLAY_NOTES[0] |= 1;
                 }    
                 play_note++;        
             }
