@@ -2502,7 +2502,7 @@ int main(void)
     }
     */
     
-    for(unsigned char j = 0; j < 43; j++) {
+    for(unsigned char j = 0; j < 63; j++) {
     116c:	f5 01       	movw	r30, r10
         songs[0].notes[j] = notes_zense[j];
     116e:	81 91       	ld	r24, Z+
@@ -2541,32 +2541,32 @@ int main(void)
     11aa:	f2 01       	movw	r30, r4
     11ac:	81 93       	st	Z+, r24
     11ae:	2f 01       	movw	r4, r30
-        songs[0].high_score = eeprom_read_byte((uint8_t*) 1);
-    11b0:	81 e0       	ldi	r24, 0x01	; 1
-    11b2:	90 e0       	ldi	r25, 0x00	; 0
-    11b4:	4c d2       	rcall	.+1176   	; 0x164e <eeprom_read_byte>
-    11b6:	90 e0       	ldi	r25, 0x00	; 0
-    11b8:	e9 e7       	ldi	r30, 0x79	; 121
-    11ba:	fb e0       	ldi	r31, 0x0B	; 11
-    11bc:	91 83       	std	Z+1, r25	; 0x01
-    11be:	80 83       	st	Z, r24
-    11c0:	f1 01       	movw	r30, r2
+    11b0:	f1 01       	movw	r30, r2
         songs[0].timing_hit[j] = timing_hit_zense[j];
-    11c2:	81 91       	ld	r24, Z+
-    11c4:	1f 01       	movw	r2, r30
-    11c6:	eb 81       	ldd	r30, Y+3	; 0x03
-    11c8:	fc 81       	ldd	r31, Y+4	; 0x04
-    11ca:	81 93       	st	Z+, r24
-    11cc:	fc 83       	std	Y+4, r31	; 0x04
-    11ce:	eb 83       	std	Y+3, r30	; 0x03
+    11b2:	81 91       	ld	r24, Z+
+    11b4:	1f 01       	movw	r2, r30
+    11b6:	eb 81       	ldd	r30, Y+3	; 0x03
+    11b8:	fc 81       	ldd	r31, Y+4	; 0x04
+    11ba:	81 93       	st	Z+, r24
+    11bc:	fc 83       	std	Y+4, r31	; 0x04
+    11be:	eb 83       	std	Y+3, r30	; 0x03
+        songs[0].high_score = eeprom_read_byte((uint8_t*) 1);
+    11c0:	81 e0       	ldi	r24, 0x01	; 1
+    11c2:	90 e0       	ldi	r25, 0x00	; 0
+    11c4:	44 d2       	rcall	.+1160   	; 0x164e <eeprom_read_byte>
+    11c6:	90 e0       	ldi	r25, 0x00	; 0
+    11c8:	e9 e7       	ldi	r30, 0x79	; 121
+    11ca:	fb e0       	ldi	r31, 0x0B	; 11
+    11cc:	91 83       	std	Z+1, r25	; 0x01
+    11ce:	80 83       	st	Z, r24
     11d0:	1f 5f       	subi	r17, 0xFF	; 255
         songs[0].hit[j] = pressDIV[j];
         songs[0].high_score = eeprom_read_byte((uint8_t*) 1);
     }
     */
     
-    for(unsigned char j = 0; j < 43; j++) {
-    11d2:	1b 32       	cpi	r17, 0x2B	; 43
+    for(unsigned char j = 0; j < 63; j++) {
+    11d2:	1f 33       	cpi	r17, 0x3F	; 63
     11d4:	59 f6       	brne	.-106    	; 0x116c <main+0x9a>
     11d6:	e9 e6       	ldi	r30, 0x69	; 105
     }

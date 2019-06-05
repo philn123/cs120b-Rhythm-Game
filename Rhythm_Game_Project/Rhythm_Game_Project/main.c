@@ -117,13 +117,13 @@ int main(void)
     }
     */
     
-    for(unsigned char j = 0; j < 43; j++) {
+    for(unsigned char j = 0; j < 63; j++) {
         songs[0].notes[j] = notes_zense[j];
         songs[0].timing[j] = timing_zense[j];
         songs[0].rest_timing[j] = rests_zense[j];
         songs[0].hit[j] = hit_zense[j];
-        songs[0].high_score = eeprom_read_byte((uint8_t*) 1);
         songs[0].timing_hit[j] = timing_hit_zense[j];
+        songs[0].high_score = eeprom_read_byte((uint8_t*) 1);
     }
     
     //Task Code
