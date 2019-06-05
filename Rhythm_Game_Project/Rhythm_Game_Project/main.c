@@ -39,6 +39,7 @@ typedef struct song{
     unsigned char timing[SONG_LENGTH];
     unsigned char rest_timing[SONG_LENGTH];
     unsigned char hit[SONG_LENGTH];
+    unsigned char timing_hit[SONG_LENGTH];
     unsigned short high_score;
 }song ;
 
@@ -47,7 +48,7 @@ enum LFT{LFT_INIT, LFT_WAIT};
 enum RGHT{RGHT_INIT, RGHT_WAIT};
 enum UPP{UP_INIT, UP_WAIT};
 enum DOWNN{DOWN_INIT, DOWN_WAIT};
-enum LCD_Menu {LCD_Menu_Init, LCD_Menu_Start, LCD_WAIT1, LCD_Menu_Songs, LCD_WAIT2, LCD_Menu_Zense, LCD_WAIT3, Play_CountDown, Play_Song, Score_Screen, LCD_WAIT4};
+enum LCD_Menu {LCD_Menu_Init, LCD_Menu_Start, LCD_WAIT1, LCD_Menu_Songs, LCD_WAIT2, LCD_BACK, LCD_Menu_Zense, LCD_WAIT3, Play_CountDown, Play_Song, Score_Screen, LCD_WAIT4};
 enum RGB_Matrix{RGB_INIT, RGB_MENU, RGB_SONG, RGB_RESET};
 enum Note_Play{Note_INIT, Note_Wait, Note_Play_Song, Note_Reset};
 enum Player{Player_Init, Player_Press};
@@ -116,33 +117,34 @@ int main(void)
     }
     */
     
-    for(unsigned char j = 0; j < 7; j++) {
+    for(unsigned char j = 0; j < 43; j++) {
         songs[0].notes[j] = notes_zense[j];
         songs[0].timing[j] = timing_zense[j];
         songs[0].rest_timing[j] = rests_zense[j];
         songs[0].hit[j] = hit_zense[j];
         songs[0].high_score = eeprom_read_byte((uint8_t*) 1);
+        songs[0].timing_hit[j] = timing_hit_zense[j];
     }
     
     //Task Code
     unsigned char tasks_increment = 0;
     
     tasks[tasks_increment].state = LFT_INIT;
-    tasks[tasks_increment].period = 50;
+    tasks[tasks_increment].period = 20;
     tasks[tasks_increment].elapsedTime = tasks[tasks_increment].period;
     tasks[tasks_increment].TickFct = &Left_Tick;
     
     tasks_increment++;
     
     tasks[tasks_increment].state = RGHT_INIT;
-    tasks[tasks_increment].period = 50;
+    tasks[tasks_increment].period = 20;
     tasks[tasks_increment].elapsedTime = tasks[tasks_increment].period;
     tasks[tasks_increment].TickFct = &Right_Tick;
     
     tasks_increment++;
     
     tasks[tasks_increment].state = UP_INIT;
-    tasks[tasks_increment].period = 50;
+    tasks[tasks_increment].period = 20;
     tasks[tasks_increment].elapsedTime = tasks[tasks_increment].period;
     tasks[tasks_increment].TickFct = &Up_Tick;
     
@@ -150,7 +152,7 @@ int main(void)
     tasks_increment++;
     
     tasks[tasks_increment].state = DOWN_INIT;
-    tasks[tasks_increment].period = 50;
+    tasks[tasks_increment].period = 20;
     tasks[tasks_increment].elapsedTime = tasks[tasks_increment].period;
     tasks[tasks_increment].TickFct = &Down_Tick;
     
@@ -180,7 +182,7 @@ int main(void)
     tasks_increment++;
     
     tasks[tasks_increment].state = Player_Init;
-    tasks[tasks_increment].period = 10;
+    tasks[tasks_increment].period = 5;
     tasks[tasks_increment].elapsedTime = tasks[tasks_increment].period;
     tasks[tasks_increment].TickFct = &Player_Tick;
     
@@ -375,10 +377,20 @@ int LCD_Menu_Tick(int state){
                 state = LCD_Menu_Zense;
             }
             break;
-        case LCD_Menu_Zense:      
-            if(LEFT && !RIGHT && !UP && !DOWN){
+        case LCD_BACK:
+            if(LEFT || RIGHT || UP || DOWN){
+                state = LCD_BACK;
+            }
+            else{
                 LCD_ClearScreen();
                 state = LCD_Menu_Songs;
+            }
+            break;
+            
+        case LCD_Menu_Zense:      
+            if(LEFT && !RIGHT && !UP && !DOWN){
+                //LCD_ClearScreen();
+                state = LCD_BACK;
                 break;
             }
             else if(!LEFT && RIGHT && !UP && !DOWN){
@@ -573,20 +585,20 @@ int RGB_Matrix_Tick(int state){
                 note_to_hit = songs[current_song_choice].hit[current_note];
                 
                 if(note_to_hit == 8){
-                    RGB_DISPLAY_NOTES[7] |= 1;
-                    RGB_DISPLAY_NOTES[6] |= 1;
+                    RGB_DISPLAY_NOTES[7] |= 3;
+                    RGB_DISPLAY_NOTES[6] |= 3;
                 }
                 else if(note_to_hit == 4){
-                    RGB_DISPLAY_NOTES[5] |= 1;
-                    RGB_DISPLAY_NOTES[4] |= 1;
+                    RGB_DISPLAY_NOTES[5] |= 3;
+                    RGB_DISPLAY_NOTES[4] |= 3;
                 }
                 else if(note_to_hit == 2){
-                    RGB_DISPLAY_NOTES[3] |= 1;
-                    RGB_DISPLAY_NOTES[2] |= 1;
+                    RGB_DISPLAY_NOTES[3] |= 3;
+                    RGB_DISPLAY_NOTES[2] |= 3;
                 }    
                 else if(note_to_hit == 1){
-                    RGB_DISPLAY_NOTES[1] |= 1;
-                    RGB_DISPLAY_NOTES[0] |= 1;
+                    RGB_DISPLAY_NOTES[1] |= 3;
+                    RGB_DISPLAY_NOTES[0] |= 3;
                 }    
                 play_note++;        
             }
@@ -621,6 +633,8 @@ int Note_Tick(int state){
     static unsigned char play_note;
     static unsigned char rest_note;
     static unsigned char note_to_hit;
+    static unsigned char hitting_note;
+    static bool already_hit;
     
     switch(state){
         case Note_INIT:
@@ -656,12 +670,12 @@ int Note_Tick(int state){
             play_note = 0;
             rest_note = 0;
             current_score = 0;
+            hitting_note = 0;
+            already_hit = false;
             break;
         case Note_Play_Song:
-            if(play_note < songs[current_song_choice].timing[current_note]){
-                note_to_hit = songs[current_song_choice].hit[current_note];
-                set_PWM(songs[current_song_choice].notes[current_note]);
-                
+            note_to_hit = songs[current_song_choice].hit[current_note];
+            if(hitting_note < songs[current_song_choice].timing_hit[current_note] && (already_hit == false)){
                 if(player_button_press == note_to_hit){
                     current_score++;
                     score_increase = true;
@@ -669,6 +683,17 @@ int Note_Tick(int state){
                 else{
                     score_increase = false;
                 }
+                hitting_note++;
+            }
+            if(play_note < songs[current_song_choice].timing[current_note]){
+                if(player_button_press == note_to_hit){
+                    current_score++;
+                    score_increase = true;
+                }
+                else{
+                    score_increase = false;
+                }
+                set_PWM(songs[current_song_choice].notes[current_note]);
                 play_note++;
                 break;
             }
@@ -680,6 +705,8 @@ int Note_Tick(int state){
                 else{
                     play_note = 0;
                     rest_note = 0;
+                    hitting_note = 0;
+                    already_hit = false;
                     if(current_note < SONG_LENGTH){
                         current_note++;
                     }
