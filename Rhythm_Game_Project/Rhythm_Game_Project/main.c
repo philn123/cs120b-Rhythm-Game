@@ -698,8 +698,8 @@ int Note_Tick(int state){
                 break;
             }
             else{
+                set_PWM(0);
                 if(rest_note < songs[current_song_choice].rest_timing[current_note]){
-                    set_PWM(0);
                     rest_note++;
                 }
                 else{
