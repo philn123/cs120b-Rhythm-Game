@@ -118,6 +118,11 @@ unsigned char timing_hit_zense[SONG_LENGTH] ={20, 1,  1,  1,    1,   1,   1,   1
                                              };
                                              */
 
+double notes_mii[SONG_LENGTH] =             {0, FS4, A4, CS5, A4, FS4, D4, D4, D4};
+unsigned char timing_mii[SONG_LENGTH] =     {10, 4, 2, 4, 4, 2, 2, 2, 8};
+unsigned char rests_mii[SONG_LENGTH] =      {6, 4, 2, 4, 4, 2, 2, 2, 20};
+unsigned char hit_mii[SONG_LENGTH] =        {0, 1, 2, 4, 2, 4, 8, 8, 8};
+unsigned char timing_hit_mii[SONG_LENGTH] = {0, 2, 1, 2, 2, 1, 1, 1, 3};
 
 
 #endif

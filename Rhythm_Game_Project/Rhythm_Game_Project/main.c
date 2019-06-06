@@ -18,10 +18,12 @@
 #include "music.h"
 
 //DEFINES
+//#define EZ_BUTTON (PINA & 0x10)
 #define LEFT_BUTTON (PINA & 0x08)
 #define DOWN_BUTTON (PINA & 0x04)
 #define UP_BUTTON  (PINA & 0x02)
 #define RIGHT_BUTTON (PINA & 0x01)
+
 
 
 //Buttons
@@ -30,9 +32,6 @@ bool RIGHT = false;
 bool UP = false;
 bool DOWN = false;
 
-//TYPES
-//#define SONG_LENGTH 250
-
 //zybooks how to make
 typedef struct song{
     double notes[SONG_LENGTH];
@@ -40,15 +39,15 @@ typedef struct song{
     unsigned char rest_timing[SONG_LENGTH];
     unsigned char hit[SONG_LENGTH];
     unsigned char timing_hit[SONG_LENGTH];
-    //unsigned char high_score;
+    unsigned char high_score;
+    unsigned char length;
 }song ;
-
 
 enum LFT{LFT_INIT, LFT_WAIT};
 enum RGHT{RGHT_INIT, RGHT_WAIT};
 enum UPP{UP_INIT, UP_WAIT};
 enum DOWNN{DOWN_INIT, DOWN_WAIT};
-enum LCD_Menu {LCD_Menu_Init, LCD_Menu_Start, LCD_WAIT1, LCD_Menu_Songs, LCD_WAIT2, LCD_BACK, LCD_Menu_Zense, LCD_WAIT3, Play_CountDown, Play_Song, Score_Screen, LCD_High_Score,LCD_WAIT4};
+enum LCD_Menu {LCD_Menu_Init, LCD_Menu_Start, LCD_WAIT1, LCD_Menu_Songs, LCD_WAIT2, LCD_Wait_Mii, LCD_BACK, LCD_Menu_Zense, LCD_Menu_Mii, LCD_WAIT3, Play_CountDown, Play_Song, Score_Screen, LCD_High_Score,LCD_WAIT4};
 enum RGB_Matrix{RGB_INIT, RGB_MENU, RGB_SONG, RGB_RESET};
 enum Note_Play{Note_INIT, Note_Wait, Note_Play_Song, Note_Reset};
 enum Player{Player_Init, Player_Press};
@@ -69,15 +68,17 @@ const unsigned char tasksNum = 8;
 task tasks[8];
 
 //global variables
-song songs[1];
+song songs[2];
 unsigned char pic[8] = {4, 12, 24, 24, 24, 24, 12, 4};
 
 unsigned char current_note = 0;
 unsigned char current_song_choice = 0;
 
 unsigned char player_button_press = 0;
-    
-unsigned char high_score = 0;
+
+//unsigned char speed = 5;
+
+
 unsigned char current_score = 0;
 unsigned char RGB_DISPLAY_NOTES[8] = {0,0,0,0,0,0,0,0};
 
@@ -105,14 +106,34 @@ int main(void)
     Shift_transmit_data(0);
     Shift_transmit_data(255);
     
-    high_score = (unsigned)(char)eeprom_read_byte((uint8_t*) 1);
+    //eeprom
+    if(eeprom_read_byte((uint8_t*)1) == 255) {
+        eeprom_update_byte((uint8_t*)1, (uint8_t) 0);
+    }
+    if(eeprom_read_byte((uint8_t*)2) == 255) {
+        eeprom_update_byte((uint8_t*)2, (uint8_t) 0);
+    }
     
+    songs[0].high_score = (unsigned)(char)eeprom_read_byte((uint8_t*) 1);
+    songs[1].high_score = (unsigned)(char)eeprom_read_byte((uint8_t*) 2);
+    
+    songs[0].length = SONG_LENGTH;
+    songs[1].length = 9;    
+    //tasks
     for(unsigned char j = 0; j < 150; j++) {
         songs[0].notes[j] = notes_zense[j];
         songs[0].timing[j] = timing_zense[j];
         songs[0].rest_timing[j] = rests_zense[j];
         songs[0].hit[j] = hit_zense[j];
         songs[0].timing_hit[j] = timing_hit_zense[j];
+    }
+    
+    for(unsigned char i = 0; i < 9; i++) {
+        songs[1].notes[i] = notes_mii[i];
+        songs[1].timing[i] = timing_mii[i];
+        songs[1].rest_timing[i] = rests_mii[i];
+        songs[1].hit[i] = hit_zense[i];
+        songs[1].timing_hit[i] = timing_hit_mii[i];
     }
     
     
@@ -176,6 +197,14 @@ int main(void)
     tasks[tasks_increment].elapsedTime = tasks[tasks_increment].period;
     tasks[tasks_increment].TickFct = &Player_Tick;
     
+    /*
+    tasks_increment++;
+    
+    tasks[tasks_increment].state = EZ_INIT;
+    tasks[tasks_increment].period = 60;
+    tasks[tasks_increment].elapsedTime = tasks[tasks_increment].period;
+    tasks[tasks_increment].TickFct = &EZ_TICK;
+    */
     //Timer
     TimerSet(tasksPeriodGCD);
     TimerOn();
@@ -347,8 +376,8 @@ int LCD_Menu_Tick(int state){
                     state = LCD_WAIT2;
                 }
                 else{
-                    LCD_ClearScreen();
-                    state = LCD_Menu_Start;
+                    state = LCD_Wait_Mii;
+                    break;
                     
                 }
                 break;
@@ -357,6 +386,15 @@ int LCD_Menu_Tick(int state){
                 state = LCD_Menu_Songs;
                 break;
             }    
+        case LCD_Wait_Mii:
+            if(LEFT || RIGHT || UP || DOWN){
+                state = LCD_Wait_Mii;
+            }
+            else{
+                LCD_ClearScreen();
+                state = LCD_Menu_Mii;
+            }
+            break;
         case LCD_WAIT2:
             if(LEFT || RIGHT || UP || DOWN){
                 state = LCD_WAIT2;
@@ -387,7 +425,21 @@ int LCD_Menu_Tick(int state){
                 break;
             }
             state = LCD_Menu_Zense;
-            break;     
+            break;    
+        case LCD_Menu_Mii:
+             if(LEFT && !RIGHT && !UP && !DOWN){
+                 state = LCD_BACK;
+                 break;
+             }
+             else if(!LEFT && RIGHT && !UP && !DOWN){
+                 LCD_ClearScreen();
+                 state = LCD_WAIT3;
+                 break;
+             }
+             else{
+                 state = LCD_Menu_Mii;
+                 break;
+             }             
         case LCD_WAIT3:
             if(LEFT || RIGHT || UP || DOWN){
                 state = LCD_WAIT3;
@@ -419,7 +471,7 @@ int LCD_Menu_Tick(int state){
                 break;
             }
         case Score_Screen:
-            if(high_score < current_score){
+            if(songs[current_song_choice].high_score < current_score){
                 song_finished = false;
                 score_increase = false;
                 LCD_ClearScreen();
@@ -479,9 +531,11 @@ int LCD_Menu_Tick(int state){
             }
             LCD_WriteData(0xA5);
             LCD_Write_Single_Line(2,1, "ZEN ZEN ZENSE");
-            LCD_Write_Single_Line(2,2, "NO");
+            LCD_Write_Single_Line(2,2, "MII");
             break;
         case LCD_WAIT2:
+            break;
+        case LCD_Wait_Mii:
             break;
         case LCD_Menu_Zense:
             LCD_Write_Single_Line(1,1, "Press - to play");
@@ -489,9 +543,20 @@ int LCD_Menu_Tick(int state){
             LCD_WriteData(0x00);
             LCD_Write_Single_Line(1,2, "High Score:");
             LCD_Cursor(28);
-            LCD_WriteData(((high_score / 100) % 10) + '0');
-            LCD_WriteData(((high_score/ 10) % 10) + '0'); //tens place
-            LCD_WriteData((high_score % 10) + '0');
+            LCD_WriteData(((songs[current_song_choice].high_score / 100) % 10) + '0');
+            LCD_WriteData(((songs[current_song_choice].high_score/ 10) % 10) + '0'); //tens place
+            LCD_WriteData((songs[current_song_choice].high_score % 10) + '0');
+            LCD_Cursor(33);
+            break;
+        case LCD_Menu_Mii:
+            LCD_Write_Single_Line(1,1, "Press - to play");
+            LCD_Cursor(7);
+            LCD_WriteData(0x00);
+            LCD_Write_Single_Line(1,2, "High Score:");
+            LCD_Cursor(28);
+            LCD_WriteData(((songs[current_song_choice].high_score / 100) % 10) + '0');
+            LCD_WriteData(((songs[current_song_choice].high_score/ 10) % 10) + '0'); //tens place
+            LCD_WriteData((songs[current_song_choice].high_score % 10) + '0');
             LCD_Cursor(33);
             break;
         case LCD_WAIT3:
@@ -516,6 +581,10 @@ int LCD_Menu_Tick(int state){
                 break;
             }
             else{
+                /*
+                LCD_Cursor(17);
+                LCD_WriteData(speed + '0');
+                */
                 break;
             }
         case Score_Screen: 
@@ -527,8 +596,14 @@ int LCD_Menu_Tick(int state){
             LCD_WriteData(((current_score / 100) % 10) + '0');
             LCD_WriteData(((current_score / 10) % 10) + '0'); //tens place
             LCD_WriteData((current_score % 10) + '0');
-            high_score = current_score;
-            eeprom_update_byte((uint8_t*)1, (uint8_t) current_score);
+            songs[current_song_choice].high_score = current_score;
+            if(!current_song_choice){
+                eeprom_update_byte((uint8_t*)1, (uint8_t) current_score);
+            }
+            else{
+                eeprom_update_byte((uint8_t*)2, (uint8_t) current_score);
+            }
+      
            
             break;
         case LCD_WAIT4:
@@ -715,7 +790,7 @@ int Note_Tick(int state){
                     rest_note = 0;
                     hitting_note = 0;
                     already_hit = false;
-                    if(current_note < SONG_LENGTH){
+                    if(current_note < songs[current_song_choice].length){
                         current_note++;
                     }
                     else{
@@ -763,7 +838,9 @@ int Player_Tick(int state){
             else{
                 player_button_press = 0;
             }
+            
             break;
     }
     return state;
 }
+
