@@ -1,10 +1,7 @@
 #ifndef __notes_h__
 #define __notes_h__
 
-#define SONG_LENGTH 150
-
-
-
+#define SONG_LENGTH 250
 
 #define B0  31
 #define C1  33
