@@ -76,7 +76,7 @@ unsigned char current_song_choice = 0;
 
 unsigned char player_button_press = 0;
 
-//unsigned char speed = 5;
+unsigned char speed = 5;
 
 
 unsigned char current_score = 0;
@@ -118,9 +118,9 @@ int main(void)
     songs[1].high_score = (unsigned)(char)eeprom_read_byte((uint8_t*) 2);
     
     songs[0].length = SONG_LENGTH;
-    songs[1].length = 9;    
+    songs[1].length = 101;    
     //tasks
-    for(unsigned char j = 0; j < 150; j++) {
+    for(unsigned char j = 0; j < songs[0].length; j++) {
         songs[0].notes[j] = notes_zense[j];
         songs[0].timing[j] = timing_zense[j];
         songs[0].rest_timing[j] = rests_zense[j];
@@ -128,7 +128,7 @@ int main(void)
         songs[0].timing_hit[j] = timing_hit_zense[j];
     }
     
-    for(unsigned char i = 0; i < 9; i++) {
+    for(unsigned char i = 0; i < songs[1].length; i++) {
         songs[1].notes[i] = notes_mii[i];
         songs[1].timing[i] = timing_mii[i];
         songs[1].rest_timing[i] = rests_mii[i];
@@ -581,10 +581,12 @@ int LCD_Menu_Tick(int state){
                 break;
             }
             else{
-                /*
-                LCD_Cursor(17);
-                LCD_WriteData(speed + '0');
-                */
+                if(speed == 6){
+                    LCD_Write_Single_Line(1,2, "Moderate");
+                }
+                else{
+                    LCD_Write_Single_Line(1,2, "HARD");
+                }
                 break;
             }
         case Score_Screen: 
@@ -624,6 +626,9 @@ int RGB_Matrix_Tick(int state){
             break;
         case RGB_MENU:
             if(playing){
+                if(current_song_choice){
+                    speed = 6;
+                }
                 play_note = 0;
                 rest_note = 0;
                 state = RGB_SONG;
@@ -699,7 +704,7 @@ int RGB_Matrix_Tick(int state){
             for(unsigned char i = 0; i < 8; i++){
                 Shift_transmit_data(128 >> i);
                 Shift_transmit_data(~RGB_DISPLAY_NOTES[i]);
-                delay_ms(5);
+                delay_ms(speed);
             
             }
             break;
